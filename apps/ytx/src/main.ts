@@ -20,6 +20,13 @@ app.use(PrimeVue, {
         name: 'primevue',
         order: 'base, primevue, components, utilities',
       },
+      darkModeSelector: '.dark',
+    },
+  },
+  pt: {
+    card: {
+      content: { class: 'flex flex-wrap gap-4' },
+      root: { class: 'hover:shadow-md rounded-lg' },
     },
   },
 })
