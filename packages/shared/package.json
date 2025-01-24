@@ -1,0 +1,19 @@
+{
+  "name": "@ytx/shared",
+  "type": "module",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@ytx/typescript-config": "*",
+    "typescript": "latest"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/options.d.ts",
+      "import": "./dist/options.js"
+    },
+    "./options.d.ts.map": "./dist/options.d.ts.map"
+  }
+}
