@@ -9,7 +9,7 @@ export const outputFormats = [
   "opus",
   "aac",
   "wma",
-];
+] as const;
 
 export const videoQualities = [
   "Best Quality",
@@ -22,7 +22,7 @@ export const videoQualities = [
   "1440p",
   "2160p",
   "4320p",
-];
+] as const;
 
 export const audioQualitites = [
   "Best Quality",
@@ -30,4 +30,4 @@ export const audioQualitites = [
   "192kbps",
   "256kbps",
   "320kbps",
-];
+] as const;
