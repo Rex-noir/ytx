@@ -18,7 +18,14 @@
       "types": "./dist/constants.d.ts",
       "import": "./dist/constants.js"
     },
+    "./schemas": {
+      "import": "./src/schemas.ts",
+      "types": "./src/schemas.ts"
+    },
     "./options.d.ts.map": "./dist/options.d.ts.map",
     "./constants.d.ts.map": "./dist/constants.d.ts.map"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
   }
 }

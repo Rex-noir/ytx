@@ -6,8 +6,9 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
+    "@ytx/shared": "*",
     "hono": "^4.6.18",
-    "@ytx/shared": "*"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",

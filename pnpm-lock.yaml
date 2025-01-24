@@ -29,6 +29,9 @@ importers:
       hono:
         specifier: ^4.6.18
         version: 4.6.18
+      zod:
+        specifier: ^3.24.1
+        version: 3.24.1
     devDependencies:
       '@types/node':
         specifier: ^20.11.17
@@ -171,6 +174,10 @@ importers:
         version: 8.15.0(eslint@9.15.0(jiti@2.4.2))(typescript@5.5.4)
 
   packages/shared:
+    dependencies:
+      zod:
+        specifier: ^3.24.1
+        version: 3.24.1
     devDependencies:
       '@ytx/typescript-config':
         specifier: '*'
@@ -3367,6 +3374,9 @@ packages:
     resolution: {integrity: sha512-GQHQqAopRhwU8Kt1DDM8NjibDXHC8eoh1erhGAJPEyveY9qqVeXvVikNKrDz69sHowPMorbPUrH/mx8c50eiBQ==}
     engines: {node: '>=18'}
 
+  zod@3.24.1:
+    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
+
 snapshots:
 
   '@ampproject/remapping@2.3.0':
@@ -6541,3 +6551,5 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yoctocolors@2.1.1: {}
+
+  zod@3.24.1: {}
