@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { audioQualitites, outputFormats, videoQualities } from '@ytx/shared'
 import { Button, Card, Checkbox, InputNumber, InputText, RadioButton } from 'primevue'
 import { ref } from 'vue'
 
@@ -10,23 +11,6 @@ const options = ref({
   endTime: null,
   attachThumbnail: false,
 })
-
-const formatOptions = {
-  outputFormats: ['mp3', 'mp4', 'webm', 'ogg', 'wav', 'm4a', 'flac', 'opus', 'aac', 'wma'],
-  videoQualities: [
-    'Best Quality',
-    '144p',
-    '240p',
-    '360p',
-    '480p',
-    '720p',
-    '1080p',
-    '1440p',
-    '2160p',
-    '4320p',
-  ],
-  audioQualities: ['Best Quality', '128kbps', '192kbps', '256kbps', '320kbps'],
-}
 </script>
 
 <template>
@@ -38,11 +22,7 @@ const formatOptions = {
         <template #title>Ouput Format</template>
         <template #subtitle> YTX will convert the file to selected output format.</template>
         <template #content>
-          <div
-            v-for="format in formatOptions.outputFormats"
-            :key="format"
-            class="flex items-center gap-2"
-          >
+          <div v-for="format in outputFormats" :key="format" class="flex items-center gap-2">
             <RadioButton
               v-model="options.selectedOutputFormat"
               :value="format"
@@ -59,11 +39,7 @@ const formatOptions = {
           >Ignore this if the output is in audio format. If the selected ouput is not
         </template>
         <template #content>
-          <div
-            v-for="vQuality in formatOptions.videoQualities"
-            :key="vQuality"
-            class="flex items-center gap-2"
-          >
+          <div v-for="vQuality in videoQualities" :key="vQuality" class="flex items-center gap-2">
             <RadioButton
               :input-id="vQuality"
               v-model="options.selectedVideoQuality"
@@ -80,11 +56,7 @@ const formatOptions = {
           >Ignore this if the output is in format. If the selected ouput is not
         </template> -->
         <template #content>
-          <div
-            v-for="aQuality in formatOptions.audioQualities"
-            :key="aQuality"
-            class="flex items-center gap-2"
-          >
+          <div v-for="aQuality in audioQualitites" :key="aQuality" class="flex items-center gap-2">
             <RadioButton
               :input-id="aQuality"
               :name="aQuality"
