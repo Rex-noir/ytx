@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { audioQualitites, outputFormats, videoQualities } from '@ytx/shared'
+import { audioQualitites, outputFormats, videoQualities } from '@ytx/shared/options'
 import { Button, Card, Checkbox, InputNumber, InputText, RadioButton } from 'primevue'
 import { ref } from 'vue'
 
