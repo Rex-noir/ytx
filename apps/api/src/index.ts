@@ -11,9 +11,13 @@ app.get("/", (c) => {
 app.route("/api", api);
 
 const port = 3000;
-console.log(`Server is running on http://localhost:${port}`);
 
-serve({
-  fetch: app.fetch,
-  port,
-});
+serve(
+  {
+    fetch: app.fetch,
+    port,
+  },
+  (info) => {
+    console.log(`Server started on http://localhost:${info.port}`);
+  }
+);
