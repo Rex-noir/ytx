@@ -10,10 +10,15 @@
     "typescript": "latest"
   },
   "exports": {
-    ".": {
+    "./options": {
       "types": "./dist/options.d.ts",
       "import": "./dist/options.js"
     },
-    "./options.d.ts.map": "./dist/options.d.ts.map"
+    "./constants": {
+      "types": "./dist/constants.d.ts",
+      "import": "./dist/constants.js"
+    },
+    "./options.d.ts.map": "./dist/options.d.ts.map",
+    "./constants.d.ts.map": "./dist/constants.d.ts.map"
   }
 }
