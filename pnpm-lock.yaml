@@ -36,6 +36,9 @@ importers:
       '@types/node':
         specifier: ^20.11.17
         version: 20.17.16
+      '@ytx/typescript-config':
+        specifier: '*'
+        version: link:../../packages/typescript-config
       tsx:
         specifier: ^4.7.1
         version: 4.19.2
