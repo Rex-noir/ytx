@@ -31,7 +31,7 @@ const resovlers = ref(zodResolver(GenerateRequestSchema))
 
 const apiURl = getEnv('VITE_API_URL')
 
-const handleSubmit = (e: FormSubmitEvent) => {
+const handleSubmit = async (e: FormSubmitEvent) => {
   if (!e.valid) {
     toast.add({
       severity: 'error',
@@ -40,13 +40,15 @@ const handleSubmit = (e: FormSubmitEvent) => {
     return
   }
 
-  fetch(`${apiURl}/generate-download-link`, {
+  const response = await fetch(`${apiURl}/generate-download-link`, {
     method: 'POST',
     body: JSON.stringify(e.values),
     headers: {
       'Content-Type': 'application/json',
     },
   })
+
+  console.log(await response.json())
 }
 </script>
 
@@ -62,7 +64,7 @@ const handleSubmit = (e: FormSubmitEvent) => {
     >
       <div class="flex flex-col gap-2">
         <InputText name="youtubeUrl" fluid placeholder="Youtube link" />
-        <div class="min-h-[3rem]">
+        <div class="min-h-[2rem]">
           <Message
             size="small"
             severity="error"
@@ -73,6 +75,9 @@ const handleSubmit = (e: FormSubmitEvent) => {
             "
           >
             {{ $form.youtubeUrl?.error.message }}
+          </Message>
+          <Message size="small" severity="info" v-else>
+            Support for youtube and youtube music.
           </Message>
         </div>
       </div>
