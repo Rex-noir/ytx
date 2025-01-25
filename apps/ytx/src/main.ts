@@ -3,6 +3,7 @@ import './assets/main.css'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
+import { ToastService } from 'primevue'
 import PrimeVue from 'primevue/config'
 import App from './App.vue'
 import router from './router'
@@ -30,4 +31,5 @@ app.use(PrimeVue, {
     },
   },
 })
+app.use(ToastService)
 app.mount('#app')
