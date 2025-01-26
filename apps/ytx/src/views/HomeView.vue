@@ -1,174 +1,122 @@
 <script setup lang="ts">
-import { getEnv } from '@/utils'
-import { Form, type FormSubmitEvent } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import { audioQualitites, outputFormats, videoQualities } from '@ytx/shared/options'
+import SelectOptions from '@/components/SelectOptions.vue'
+import { audioAndVideo, audioOnly, mergeVideo, videoOnly } from '@ytx/shared/options'
 import { GenerateRequestSchema } from '@ytx/shared/schemas'
-import {
-  Button,
-  Card,
-  Checkbox,
-  InputNumber,
-  InputText,
-  Message,
-  RadioButton,
-  useToast,
-} from 'primevue'
+import { useToast } from 'primevue'
 import { ref } from 'vue'
+import { ZodError } from 'zod'
 
-const options = ref({
-  selectedOutputFormat: '',
-  selectedVideoQuality: '',
-  selectedAudioQuality: '',
-  startTime: null,
-  endTime: null,
-  attachThumbnail: false,
-})
-
+const errors = ref('')
 const toast = useToast()
 
-const resovlers = ref(zodResolver(GenerateRequestSchema))
+const tabs: Record<string, string> = {
+  '0': 'videoonly',
+  '1': 'audioonly',
+  '2': 'audioandvideo',
+  '3': 'mergevideo',
+}
+const models = ref({
+  quality: '',
+  format: '',
+  filter: tabs['0'],
+  url: '',
+})
 
-const apiURl = getEnv('VITE_API_URL')
+const onSubmit = () => {
+  try {
+    GenerateRequestSchema.parse(models.value)
+  } catch (error) {
+    // Explicitly narrow the type of `error` to `ZodError`
+    if (error instanceof ZodError) {
+      toast.add({
+        severity: 'error',
+        summary: 'Please make sure you input valid data.',
+        detail: error.errors[0].message, // Now `error` is correctly typed as `ZodError`
+      })
+      return
+    }
 
-const handleSubmit = async (e: FormSubmitEvent) => {
-  if (!e.valid) {
     toast.add({
       severity: 'error',
-      summary: 'Please fill all the fields',
+      summary: 'Something went wrong.',
+      detail: 'Please try again later.',
     })
-    return
   }
-
-  const response = await fetch(`${apiURl}/generate-download-link`, {
-    method: 'POST',
-    body: JSON.stringify(e.values),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-
-  console.log(await response.json())
 }
+const handleTabChange = (value: string | number) => {
+  models.value.filter = tabs[value]
+  models.value.format = ''
+  models.value.quality = ''
+}
+
+const tabPanels = [
+  {
+    value: '0',
+    label: 'Video Only',
+    options: [
+      { name: 'quality', options: videoOnly.qualities },
+      { name: 'format', options: videoOnly.format },
+    ],
+  },
+  {
+    value: '1',
+    label: 'Audio Only',
+    options: [{ name: 'quality', options: audioOnly.qualities }],
+  },
+  {
+    value: '2',
+    label: 'Audio And Video',
+    options: [
+      { name: 'quality', options: audioAndVideo.qualities },
+      { name: 'format', options: audioAndVideo.format },
+    ],
+  },
+  {
+    value: '3',
+    label: 'Merge Video',
+    options: [
+      { name: 'quality', options: mergeVideo.qualities },
+      { name: 'format', options: mergeVideo.format },
+    ],
+  },
+]
 </script>
 
 <template>
-  <main class="">
-    <Form
-      v-slot="$form"
-      class="mx-auto flex min-h-screen max-w-4xl flex-col justify-center gap-3 p-2"
-      :resolver="resovlers"
-      @submit="handleSubmit"
-      validate-on-mount
-      validate-on-blur
-    >
-      <div class="flex flex-col gap-2">
-        <InputText name="youtubeUrl" fluid placeholder="Youtube link" />
-        <div class="min-h-[2rem]">
-          <Message
-            size="small"
-            severity="error"
-            v-if="
-              $form.youtubeUrl?.invalid &&
-              $form.youtubeUrl.dirty &&
-              $form.youtubeUrl.value.length > 0
-            "
+  <main>
+    <div class="mx-auto mt-4 flex max-w-3xl flex-col justify-center gap-2 p-5">
+      <Message size="small" :severity="errors ? 'error' : 'info'">
+        {{ errors ? errors : 'YTX Youtube Downloader' }}
+      </Message>
+
+      <InputText placeholder="Enter YT url" v-model="models.url" name="url" fluid />
+
+      <Tabs @update:value="handleTabChange" scrollable class="w-full" value="0">
+        <TabList
+          :pt="{
+            tabList: { class: 'flex justify-between items-center' },
+          }"
+        >
+          <Tab v-for="tab in tabPanels" :key="tab.value" :value="tab.value">{{ tab.label }}</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel
+            class="flex flex-col gap-5"
+            v-for="tab in tabPanels"
+            :key="tab.value"
+            :value="tab.value"
           >
-            {{ $form.youtubeUrl?.error.message }}
-          </Message>
-          <Message size="small" severity="info" v-else>
-            Support for youtube and youtube music.
-          </Message>
-        </div>
-      </div>
-
-      <div class="grid gap-5 md:grid-cols-2">
-        <Card>
-          <template #title>Video quality</template>
-          <template #subtitle
-            >Ignore this if the output is in audio format. If the selected ouput is not
-          </template>
-          <template #content>
-            <div v-for="vQuality in videoQualities" :key="vQuality" class="flex items-center gap-2">
-              <RadioButton
-                :input-id="vQuality"
-                v-model="options.selectedVideoQuality"
-                name="videoQuality"
-                :value="vQuality"
-              />
-              <label :for="vQuality"> {{ vQuality }} </label>
-            </div>
-          </template>
-        </Card>
-        <Card>
-          <template #title>Audio quality</template>
-          <!-- <template #subtitle
-      >Ignore this if the output is in format. If the selected ouput is not
-    </template> -->
-          <template #content>
-            <div
-              v-for="aQuality in audioQualitites"
-              :key="aQuality"
-              class="flex items-center gap-2"
-            >
-              <RadioButton
-                :input-id="aQuality"
-                name="audioQuality"
-                :value="aQuality"
-                v-model="options.selectedAudioQuality"
-              />
-              <label :for="aQuality"> {{ aQuality }} </label>
-            </div>
-          </template>
-        </Card>
-        <Card>
-          <template #title>Ouput Format</template>
-          <template #subtitle> YTX will convert the file to selected output format.</template>
-          <template #content>
-            <div v-for="format in outputFormats" :key="format" class="flex items-center gap-2">
-              <RadioButton
-                v-model="options.selectedOutputFormat"
-                :value="format"
-                :inputId="format"
-                name="format"
-              />
-              <label :for="format"> {{ format }} </label>
-            </div>
-          </template>
-        </Card>
-        <Card>
-          <template #title>Trimming</template>
-          <template #subtitle>Start and end time of the video in seconds. </template>
-          <template #content>
-            <InputNumber
-              v-model="options.startTime"
-              name="startTime"
-              fluid
-              placeholder="Start time"
+            <SelectOptions
+              v-for="option in tab.options"
+              :key="option.name"
+              v-model="models[option.name as keyof typeof models]"
+              :name="option.name"
+              :options="option.options"
             />
-            <InputNumber v-model="options.endTime" name="endTime" fluid placeholder="End Time" />
-          </template>
-        </Card>
-        <Card class="md:col-span-2">
-          <template #title>Additional Options</template>
-          <!-- <template #subtitle
-      >Ignore this if the output is in format. If the selected ouput is not
-    </template> -->
-          <template #content>
-            <div class="flex items-center gap-2">
-              <Checkbox
-                binary
-                v-model="options.attachThumbnail"
-                inputId="attachThumbnail"
-                name="saveThumbnail"
-              />
-              <label for="attachThumbnail"> Attach Thumbnail </label>
-            </div>
-          </template>
-        </Card>
-      </div>
-
-      <Button type="submit" :disabled="!$form.valid" label="Download" />
-    </Form>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+      <Button @click="onSubmit" type="button">Download</Button>
+    </div>
   </main>
 </template>
