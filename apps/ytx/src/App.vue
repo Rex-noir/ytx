@@ -5,4 +5,5 @@ import { RouterView } from 'vue-router'
 <template>
   <header></header>
   <RouterView />
+  <Toast />
 </template>
