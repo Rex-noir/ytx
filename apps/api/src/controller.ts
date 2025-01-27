@@ -2,7 +2,7 @@ import { GenerateRequestSchema } from "@ytx/shared/schemas";
 import type { Context } from "hono";
 import { stream } from "hono/streaming";
 import mime from "mime";
-import { createReadStream, statSync } from "node:fs";
+import { createReadStream, statSync, unlinkSync } from "node:fs";
 import { YtDlpService } from "./ytdlp.service.js";
 
 export const generateDownloadLink = async (c: Context) => {
@@ -60,6 +60,9 @@ export const downloadFile = async (c: Context) => {
       fileStream.destroy();
     });
 
-    await stream.pipe(webReadableStream);
+    await stream.pipe(webReadableStream).then(() => {
+      console.log("Download completed");
+      unlinkSync(filePath);
+    });
   });
 };
