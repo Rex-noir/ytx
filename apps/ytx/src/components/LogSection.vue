@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { nextTick } from 'vue'
+import { watch } from 'vue'
+
 interface Props {
   progress: string | null
   logs: string[]
 }
 
-defineProps<Props>()
+const { logs } = defineProps<Props>()
+
 const getProgressValue = (progressStr: string | null): number => {
   if (!progressStr) return 0
   const match = progressStr.match(/(\d+(\.\d+)?)%/)
@@ -45,6 +49,21 @@ const getStatusConfig = (status: 'success' | 'info' | 'warning') => {
 const formatTimestamp = () => {
   return new Date().toLocaleTimeString()
 }
+
+watch(
+  () => logs.length,
+  async () => {
+    await nextTick()
+    const id = `log-item-${logs.length - 1}`
+    const element = document.querySelector(`div#${id}`) as HTMLDivElement
+
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+  },
+
+  { deep: true },
+)
 </script>
 
 <template>
@@ -79,6 +98,7 @@ const formatTimestamp = () => {
             <div
               v-for="(logItem, index) in logs"
               :key="index"
+              :id="`log-item-${index}`"
               class="w-full rounded-lg border-l-4 bg-white p-3 shadow-sm transition-all hover:shadow-md"
               :class="getStatusConfig(getLogStatus(logItem)).borderColor"
             >
