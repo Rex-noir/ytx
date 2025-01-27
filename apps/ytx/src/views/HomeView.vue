@@ -1,122 +1,243 @@
 <script setup lang="ts">
-import SelectOptions from '@/components/SelectOptions.vue'
-import { audioAndVideo, audioOnly, mergeVideo, videoOnly } from '@ytx/shared/options'
+import LogSection from '@/components/LogSection.vue'
+import { getEnv } from '@/utils'
+import { Form, type FormSubmitEvent } from '@primevue/forms'
+import { zodResolver } from '@primevue/forms/resolvers/zod'
+import { useForm } from '@primevue/forms/useform'
+import {
+  audioFormats,
+  audioQualityMap,
+  filtersMap,
+  optionInfoMap,
+  videoFormats,
+  videoQualitiesMap,
+} from '@ytx/shared/options'
 import { GenerateRequestSchema } from '@ytx/shared/schemas'
 import { useToast } from 'primevue'
 import { ref } from 'vue'
-import { ZodError } from 'zod'
 
-const errors = ref('')
 const toast = useToast()
 
-const tabs: Record<string, string> = {
-  '0': 'videoonly',
-  '1': 'audioonly',
-  '2': 'audioandvideo',
-  '3': 'mergevideo',
-}
-const models = ref({
-  quality: '',
-  format: '',
-  filter: tabs['0'],
-  url: '',
-})
+const apiURL = getEnv('VITE_API_URL', 'http://localhost:3000/api')
 
-const onSubmit = () => {
-  try {
-    GenerateRequestSchema.parse(models.value)
-  } catch (error) {
-    // Explicitly narrow the type of `error` to `ZodError`
-    if (error instanceof ZodError) {
-      toast.add({
-        severity: 'error',
-        summary: 'Please make sure you input valid data.',
-        detail: error.errors[0].message, // Now `error` is correctly typed as `ZodError`
-      })
-      return
-    }
+const progress = ref<string | null>(null)
 
-    toast.add({
-      severity: 'error',
-      summary: 'Something went wrong.',
-      detail: 'Please try again later.',
-    })
+const log = ref<string[]>([])
+
+const formats = ref<readonly string[]>([...videoFormats])
+const qualities = ref<Record<string, string>>(videoQualitiesMap)
+
+const form = useForm({ resolver: zodResolver(GenerateRequestSchema), validateOnMount: true })
+
+form.defineField('url', { initialValue: '' })
+form.defineField('filter', { initialValue: 'mergevideo' })
+form.defineField('format', { initialValue: 'mkv' })
+form.defineField('quality', { initialValue: 'bv*+ba/b' })
+form.defineField('embedThumbnail', { initialValue: true })
+form.defineField('addMetaData', { initialValue: true })
+form.defineField('embedSubs', { initialValue: true })
+form.defineField('audioQuality', { initialValue: 'bestaudio' })
+
+const handleFilterChange = (filter: string) => {
+  if (filter === 'audioonly') {
+    formats.value = audioFormats
+    qualities.value = audioQualityMap
+    form.states.quality.value = 'bestaudio'
+    form.states.format.value = 'm4a'
+  }
+  if (filter === 'videoonly' || filter === 'mergevideo') {
+    formats.value = videoFormats
+    qualities.value = videoQualitiesMap
+    form.states.quality.value = 'bv*+ba/b'
+    form.states.format.value = 'mkv'
   }
 }
-const handleTabChange = (value: string | number) => {
-  models.value.filter = tabs[value]
-  models.value.format = ''
-  models.value.quality = ''
-}
 
-const tabPanels = [
-  {
-    value: '0',
-    label: 'Video Only',
-    options: [
-      { name: 'quality', options: videoOnly.qualities },
-      { name: 'format', options: videoOnly.format },
-    ],
-  },
-  {
-    value: '1',
-    label: 'Audio Only',
-    options: [{ name: 'quality', options: audioOnly.qualities }],
-  },
-  {
-    value: '2',
-    label: 'Audio And Video',
-    options: [
-      { name: 'quality', options: audioAndVideo.qualities },
-      { name: 'format', options: audioAndVideo.format },
-    ],
-  },
-  {
-    value: '3',
-    label: 'Merge Video',
-    options: [
-      { name: 'quality', options: mergeVideo.qualities },
-      { name: 'format', options: mergeVideo.format },
-    ],
-  },
-]
+const onSubmit = async (e: FormSubmitEvent) => {
+  if (e.valid) {
+    const response = await fetch(`${apiURL}/generate-download-link`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: form.states.url.value,
+        filter: form.states.filter.value,
+        format: form.states.format.value,
+        quality: form.states.quality.value,
+        embedThumbnail: form.states.embedThumbnail.value,
+        addMetaData: form.states.addMetaData.value,
+        embedSubs: form.states.embedSubs.value,
+      }),
+    })
+
+    log.value.push('Request sent to the server, waiting for response...')
+    progress.value = 'Starting'
+
+    const reader = await response.body?.getReader()
+    const decoder = new TextDecoder()
+
+    while (true) {
+      const result = await reader?.read()
+
+      if (result?.done) break
+
+      const chunk = decoder.decode(result?.value)
+      try {
+        const data = JSON.parse(chunk)
+
+        if (data['_percent_str']) {
+          progress.value = data['_percent_str']
+        }
+        if (data.status === 'complete') {
+          progress.value = null
+          toast.add({ severity: 'success', summary: 'Success', detail: 'Download link generated' })
+          log.value.push('Process completed, Initiating download ....')
+
+          const downloadLink = await fetch(`${apiURL}/file/${encodeURIComponent(data['file'])}`, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+            },
+          })
+
+          const blob = await downloadLink.blob()
+
+          // Create a temporary <a> element to trigger the download
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = data['file'].split('/').pop() || 'download' // Use the file name from the path
+          document.body.appendChild(a)
+          a.click()
+
+          // Clean up
+          window.URL.revokeObjectURL(url)
+          document.body.removeChild(a)
+
+          break
+        }
+        log.value.push(
+          `Status : Processing. Processed Bytes : ${data['downloaded_bytes']}. Total Bytes : ${data['total_bytes']}. Speed : ${data['_speed_str']}. ETA : ${data['eta_str']}. Elapsed : ${data['_elapsed_str']}`,
+        )
+      } catch {}
+    }
+  } else {
+    const error = Object.values(e.errors)[0][0]['message']
+    toast.add({ severity: 'error', summary: 'Error', detail: error })
+  }
+}
 </script>
 
 <template>
-  <main>
-    <div class="mx-auto mt-4 flex max-w-3xl flex-col justify-center gap-2 p-5">
-      <Message size="small" :severity="errors ? 'error' : 'info'">
-        {{ errors ? errors : 'YTX Youtube Downloader' }}
+  <main class="mx-auto gap-10 p-5 md:grid md:max-w-[80%] md:grid-cols-2">
+    <Form
+      @submit="form.handleSubmit((e: FormSubmitEvent) => onSubmit(e))()"
+      class="flex flex-col gap-10"
+    >
+      <InputText placeholder="Enter url" v-model="form.states.url.value" label="URL" />
+      <Message>
+        Filter : {{ filtersMap[form.states.filter.value as keyof typeof filtersMap] }}
+        <p>{{ optionInfoMap[form.states.filter.value as keyof typeof optionInfoMap] }}</p>
       </Message>
-
-      <InputText placeholder="Enter YT url" v-model="models.url" name="url" fluid />
-
-      <Tabs @update:value="handleTabChange" scrollable class="w-full" value="0">
-        <TabList
-          :pt="{
-            tabList: { class: 'flex justify-between items-center' },
-          }"
-        >
-          <Tab v-for="tab in tabPanels" :key="tab.value" :value="tab.value">{{ tab.label }}</Tab>
-        </TabList>
-        <TabPanels>
-          <TabPanel
-            class="flex flex-col gap-5"
-            v-for="tab in tabPanels"
-            :key="tab.value"
-            :value="tab.value"
+      <Card>
+        <template #title>Filter</template>
+        <template #content>
+          <RadioButtonGroup
+            @value-change="handleFilterChange"
+            class="flex flex-wrap gap-5"
+            v-model="form.states.filter.value"
           >
-            <SelectOptions
-              v-for="option in tab.options"
-              :key="option.name"
-              v-model="models[option.name as keyof typeof models]"
-              :name="option.name"
-              :options="option.options"
-            />
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
-      <Button @click="onSubmit" type="button">Download</Button>
-    </div>
+            <div v-for="(filter, key) in filtersMap" :key="filter" class="flex items-center gap-2">
+              <RadioButton :input-id="filter" :value="key" />
+              <label for="cheese"> {{ filter }} </label>
+            </div>
+          </RadioButtonGroup>
+        </template>
+      </Card>
+
+      <Card>
+        <template #title>Format</template>
+        <template #content>
+          <RadioButtonGroup class="flex flex-wrap gap-5" v-model="form.states.format.value">
+            <div v-for="filter in formats" :key="filter" class="flex items-center gap-2">
+              <RadioButton :input-id="filter" :value="filter" />
+              <label for="cheese"> {{ filter }} </label>
+            </div>
+          </RadioButtonGroup>
+        </template>
+      </Card>
+      <Card>
+        <template #title>
+          {{ form.states.filter.value === 'audioandvideo' ? 'Video Quality' : 'Quality' }}</template
+        >
+        <template #content>
+          <RadioButtonGroup class="flex flex-wrap gap-5" v-model="form.states.quality.value">
+            <div v-for="(quality, key) in qualities" :key="quality" class="flex items-center gap-2">
+              <RadioButton :input-id="quality" :value="key" />
+              <label :for="quality"> {{ quality }} </label>
+            </div>
+          </RadioButtonGroup>
+        </template>
+      </Card>
+
+      <Card v-if="form.states.filter.value === 'audioandvideo'">
+        <template #title> Audio Quality</template>
+        <template #content>
+          <RadioButtonGroup class="flex flex-wrap gap-5" v-model="form.states.audioQuality.value">
+            <div
+              v-for="(quality, key) in audioQualityMap"
+              :key="quality"
+              class="flex items-center gap-2"
+            >
+              <RadioButton :input-id="quality" :value="key" />
+              <label :for="quality"> {{ quality }} </label>
+            </div>
+          </RadioButtonGroup>
+        </template>
+      </Card>
+
+      <Card>
+        <template #title>Options</template>
+        <template #content>
+          <div class="flex flex-wrap gap-4">
+            <div v-if="form.states.filter.value !== 'audioonly'" class="flex items-center gap-2">
+              <Checkbox
+                v-model="form.states.embedSubs.value"
+                input-id="embedSubs"
+                :value="true"
+                name="embedSubs"
+                binary
+              />
+              <label for="embedSubs"> Embed Subs </label>
+            </div>
+            <div class="flex items-center gap-2">
+              <Checkbox
+                v-model="form.states.addMetaData.value"
+                input-id="addMetaData"
+                :value="true"
+                name="addMetaData"
+                binary
+              />
+              <label for="addMetaData"> Add Metadata </label>
+            </div>
+            <div class="flex items-center gap-2">
+              <Checkbox
+                v-model="form.states.embedThumbnail.value"
+                input-id="embedThumbnail"
+                :value="true"
+                name="embedThumbnail"
+                binary
+              />
+              <label for="embedThumbnail"> Embed Thumbnail </label>
+            </div>
+          </div>
+        </template>
+      </Card>
+
+      <Button type="submit" label="Start the process." fluid />
+    </Form>
+
+    <LogSection :progress="progress" :logs="log" />
   </main>
 </template>
