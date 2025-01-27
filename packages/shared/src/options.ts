@@ -1,20 +1,25 @@
 // Common quality options
-export const videoQualities = [
-  "2160p",
-  "1440p",
-  "1080p",
-  "720p",
-  "480p",
-  "360p",
-  "240p",
-  "144p",
-  "highest",
-  "lowest",
+export const videoQualitiesMap = {
+  "2160": "2160p",
+  "1440": "1440p",
+  "1080": "1080p",
+  "720": "720p",
+  "480": "480p",
+  "360": "360p",
+  "240": "240p",
+  "144": "144p",
+  "bv*+ba/b": "Best Quality",
+} as const;
+
+export const audioQualities = [
+  "bestaudio",
+  "high",
+  "good",
+  "medium",
+  "low",
+  "standard",
+  "poor",
 ] as const;
-
-export const audioQualities = ["highest", "lowest"] as const;
-
-export const commonFormats = ["mp4", "webm"] as const;
 
 export const audioFormats = [
   "mp3",
@@ -28,54 +33,27 @@ export const audioFormats = [
   "alac",
 ] as const;
 
-export const mergeFormats = ["mkv", "mp4", "webm", "fiv"] as const;
+export const videoFormats = ["mkv", "mp4", "webm"] as const;
 
-export const audioQualityLevels = [
-  "1",
-  "2",
-  "3",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-  "8",
-  "10",
-] as const;
-
-export const filters = [
-  "audioonly",
-  "videoonly",
-  "audioandvideo",
-  "mergevideo",
-] as const;
-
-// Configurations
-export const videoOnly = {
-  qualities: videoQualities,
-  format: commonFormats,
-  filter: "videoonly",
+export const audioQualityMap = {
+  bestaudio: "Best Audio",
+  1: "High Quality",
+  2: "Good Quality",
+  3: "Medium Quality",
+  5: "Standard Quality",
+  4: "Low Quality",
 } as const;
 
-export const audioOnly = {
-  qualities: audioQualities,
-  filter: "audioonly",
+export const filtersMap = {
+  mergevideo: "Merge Video",
+  audioonly: "Audio Only",
+  videoonly: "Video Only",
+  audioandvideo: "Audio and Video",
 } as const;
 
-export const audioAndVideo = {
-  filter: "audioandvideo",
-  qualities: audioQualities,
-  format: commonFormats,
-} as const;
-
-export const mergeVideo = {
-  filter: "mergevideo",
-  qualities: videoQualities,
-  format: mergeFormats,
-  defaultQuality: ["highest", "lowest", "none"],
-} as const;
-
-export const extractAudio = {
-  quality: audioQualityLevels,
-  format: audioFormats,
-} as const;
+export const optionInfoMap = {
+  mergevideo: "Merge video and audio into a single file",
+  audioonly: "Download only audio",
+  videoonly: "Download only video without audio",
+  audioandvideo: "Download both audio and video separately then merge them.",
+};
