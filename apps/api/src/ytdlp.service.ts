@@ -91,12 +91,22 @@ export class YtDlpService {
 
     const ytdlpProcess = spawn("yt-dlp", commandArgs);
 
+    const error = JSON.stringify({
+      status: "error",
+      message: "An error occurred while processing the request",
+    });
+
     const stream = new ReadableStream({
       start(controller) {
         ytdlpProcess.stdout.on("data", (data) => {
           const progress = data.toString().trim();
           console.log(progress);
           controller.enqueue(`${progress}\n\n`);
+        });
+
+        ytdlpProcess.on("error", (error) => {
+          console.error("error happened", error);
+          controller.enqueue(`${error}\n\n`);
         });
 
         ytdlpProcess.stderr.on("data", (data) => {
@@ -116,7 +126,7 @@ export class YtDlpService {
               controller.enqueue(`error: ${error}\n\n`);
             }
           } else {
-            controller.enqueue(`error: Process exited with code ${code}\n\n`);
+            controller.enqueue(error);
           }
           controller.close();
         });
